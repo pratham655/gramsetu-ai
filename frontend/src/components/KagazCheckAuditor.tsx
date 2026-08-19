@@ -32,6 +32,7 @@ interface KagazCheckAuditorProps {
   initialScheme?: SchemeData | SchemeMatchResult | { id: string; name: string; required_documents: string[] } | null;
   citizenProfile?: CitizenProfile;
   onApplyForScheme?: (schemeId: string) => void;
+  onGenerateParchaa?: (schemeId: string) => void;
   availableSchemes?: SchemeData[];
 }
 
@@ -39,8 +40,10 @@ export function KagazCheckAuditor({
   initialScheme = null,
   citizenProfile,
   onApplyForScheme,
+  onGenerateParchaa,
   availableSchemes = [],
 }: KagazCheckAuditorProps) {
+
   const [selectedSchemeId, setSelectedSchemeId] = useState<string>(() => {
     if (!initialScheme) return 'pm-kisan-001';
     if ('id' in initialScheme && initialScheme.id) return initialScheme.id;
@@ -907,8 +910,23 @@ export function KagazCheckAuditor({
                     <Info className="h-4 w-4 text-emerald-600 shrink-0" />
                     <span>{schemeReadiness.overall_recommendation}</span>
                   </div>
+
+                  {/* Parchaa Generation Action Button */}
+                  {onGenerateParchaa && (
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={() => onGenerateParchaa(selectedSchemeId)}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <FileText className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Generate Application Parchaa (with Audit Readiness)</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
+
             </div>
           ) : (
             /* Empty State */

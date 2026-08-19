@@ -12,10 +12,13 @@ import {
   Sparkles,
   Camera,
   Mic,
+  FileText,
 } from 'lucide-react';
 
-export type TabType = 'home' | 'find' | 'explore' | 'vanibot' | 'kagazcheck' | 'applications' | 'profile' | 'help';
+
+export type TabType = 'home' | 'find' | 'explore' | 'vanibot' | 'kagazcheck' | 'parchaa' | 'applications' | 'profile' | 'help';
 export type LanguageType = 'en' | 'hi' | 'kn';
+
 
 interface NavbarProps {
   currentTab: TabType;
@@ -145,6 +148,22 @@ export function Navbar({
                 Vision
               </span>
             </button>
+
+            <button
+              onClick={() => handleNav('parchaa')}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                currentTab === 'parchaa'
+                  ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5 text-emerald-600" />
+              <span>Parchaa</span>
+              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-100 text-amber-900">
+                Dossier
+              </span>
+            </button>
+
 
             <button
               onClick={() => handleNav('applications')}
@@ -308,6 +327,17 @@ export function Navbar({
               <Camera className="h-4 w-4 text-emerald-600" />
               <span>KagazCheck</span>
             </button>
+
+            <button
+              onClick={() => handleNav('parchaa')}
+              className={`p-3 rounded-xl text-xs font-semibold text-left flex items-center gap-2 ${
+                currentTab === 'parchaa' ? 'bg-emerald-600 text-white font-bold' : 'bg-emerald-50 text-emerald-800'
+              }`}
+            >
+              <FileText className="h-4 w-4 text-emerald-600" />
+              <span>Parchaa Generator</span>
+            </button>
+
 
 
             <button

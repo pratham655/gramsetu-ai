@@ -16,6 +16,7 @@ interface SchemeDetailsModalProps {
   onClose: () => void;
   onStartApplication: (scheme: SchemeData | SchemeMatchResult) => void;
   onAuditDocuments?: (scheme: SchemeData | SchemeMatchResult) => void;
+  onGenerateParchaa?: (scheme: SchemeData | SchemeMatchResult) => void;
 }
 
 export function SchemeDetailsModal({
@@ -23,6 +24,7 @@ export function SchemeDetailsModal({
   onClose,
   onStartApplication,
   onAuditDocuments,
+  onGenerateParchaa,
 }: SchemeDetailsModalProps) {
   if (!scheme) return null;
 
@@ -233,7 +235,7 @@ export function SchemeDetailsModal({
             Close Details
           </button>
 
-          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
             {onAuditDocuments && (
               <button
                 type="button"
@@ -241,9 +243,23 @@ export function SchemeDetailsModal({
                   onAuditDocuments(scheme);
                   onClose();
                 }}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-emerald-600 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 font-bold text-xs shadow-2xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-emerald-600 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 font-bold text-xs shadow-2xs transition cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>Audit with KagazCheck</span>
+              </button>
+            )}
+
+            {onGenerateParchaa && (
+              <button
+                type="button"
+                onClick={() => {
+                  onGenerateParchaa(scheme);
+                  onClose();
+                }}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <FileText className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Generate Application Parchaa</span>
               </button>
             )}
 
@@ -252,10 +268,10 @@ export function SchemeDetailsModal({
                 onStartApplication(scheme);
                 onClose();
               }}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-200 flex items-center justify-center gap-2 transition cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-200 flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <Sparkles className="h-4 w-4" />
-              <span>Prepare Application Dossier</span>
+              <span>Track Application</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -264,3 +280,4 @@ export function SchemeDetailsModal({
     </div>
   );
 }
+

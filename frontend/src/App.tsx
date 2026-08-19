@@ -12,6 +12,7 @@ import { MyApplicationsView, type ApplicationRecord } from './components/MyAppli
 import { AssistantPanel } from './components/AssistantPanel';
 import { KagazCheckAuditor } from './components/KagazCheckAuditor';
 import { VaniBot } from './components/VaniBot';
+import { ParchaaGenerator } from './components/ParchaaGenerator';
 import {
   fetchActiveSchemes,
   matchEligibility,
@@ -56,8 +57,12 @@ export default function App() {
   // KagazCheck Scoped Scheme State
   const [targetKagazCheckScheme, setTargetKagazCheckScheme] = useState<SchemeData | SchemeMatchResult | null>(null);
 
+  // Parchaa Generator Scoped Scheme State
+  const [targetParchaaScheme, setTargetParchaaScheme] = useState<SchemeData | SchemeMatchResult | null>(null);
+
   // Assistant Drawer State
   const [assistantOpen, setAssistantOpen] = useState<boolean>(false);
+
 
   // Application Dossiers Tracking State
   const [applications, setApplications] = useState<ApplicationRecord[]>([
@@ -176,6 +181,21 @@ export default function App() {
     setCurrentTab('kagazcheck');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Handle Open Parchaa Generator
+  const handleOpenParchaa = (schemeOrId?: SchemeData | SchemeMatchResult | string) => {
+    if (schemeOrId) {
+      if (typeof schemeOrId === 'string') {
+        const found = schemes.find((s) => s.id === schemeOrId);
+        if (found) setTargetParchaaScheme(found);
+      } else {
+        setTargetParchaaScheme(schemeOrId);
+      }
+    }
+    setCurrentTab('parchaa');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-between selection:bg-emerald-100 selection:text-emerald-900 font-sans">
@@ -330,6 +350,7 @@ export default function App() {
                 }
               }}
               onOpenKagazCheck={(sId) => handleOpenKagazCheck(sId)}
+              onOpenParchaa={(sId) => handleOpenParchaa(sId)}
             />
           </div>
         )}
@@ -337,7 +358,6 @@ export default function App() {
         {/* VIEW 5: KAGAZCHECK MULTIMODAL VISION DOCUMENT AUDITOR */}
         {currentTab === 'kagazcheck' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
             <KagazCheckAuditor
               initialScheme={targetKagazCheckScheme}
               citizenProfile={profile}
@@ -347,11 +367,26 @@ export default function App() {
                 if (found) handleStartApplication(found);
                 else setCurrentTab('applications');
               }}
+              onGenerateParchaa={(sId) => handleOpenParchaa(sId)}
             />
           </div>
         )}
 
-        {/* VIEW 5: MY PROFILE */}
+        {/* VIEW 6: PARCHAA GENERATOR ONE-CLICK DOSSIER */}
+        {currentTab === 'parchaa' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <ParchaaGenerator
+              initialScheme={targetParchaaScheme}
+              citizenProfile={profile}
+              availableSchemes={schemes}
+              language={language}
+              onExploreSchemes={() => setCurrentTab('explore')}
+              onOpenKagazCheck={(sId) => handleOpenKagazCheck(sId)}
+            />
+          </div>
+        )}
+
+        {/* VIEW 7: MY PROFILE */}
         {currentTab === 'profile' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <MyProfileView
@@ -362,13 +397,14 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 6: MY APPLICATIONS */}
+        {/* VIEW 8: MY APPLICATIONS */}
         {currentTab === 'applications' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <MyApplicationsView
               applications={applications}
               onExploreSchemes={() => setCurrentTab('explore')}
               onOpenKagazCheck={(sId) => handleOpenKagazCheck(sId)}
+              onGenerateParchaa={(sId) => handleOpenParchaa(sId)}
             />
           </div>
         )}
@@ -380,7 +416,9 @@ export default function App() {
         onClose={() => setSelectedScheme(null)}
         onStartApplication={handleStartApplication}
         onAuditDocuments={(s) => handleOpenKagazCheck(s)}
+        onGenerateParchaa={(s) => handleOpenParchaa(s)}
       />
+
 
       {/* Grounded AI Assistant Drawer */}
       <AssistantPanel

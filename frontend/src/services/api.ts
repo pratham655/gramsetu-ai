@@ -462,5 +462,146 @@ export async function clearVaniSession(
   return response.data;
 }
 
+// -------------------------------------------------------------
+// PARCHAA GENERATOR: APPLICATION DOSSIER GENERATOR INTERFACES
+// -------------------------------------------------------------
+
+export interface ParchaaCitizenProfile {
+  name?: string | null;
+  state?: string | null;
+  district?: string | null;
+  occupation?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  income?: number | null;
+  landholding?: number | null;
+  category?: string | null;
+  bpl?: boolean | null;
+  aadhaar_masked?: string | null;
+  bank_account_masked?: string | null;
+  yojanamatch_eligible?: boolean | null;
+  yojanamatch_score?: number | null;
+}
+
+export interface ParchaaDocumentItem {
+  document_name: string;
+  document_code?: string | null;
+  status: 'Ready' | 'Verified' | 'Missing' | 'Needs Attention' | 'Required';
+  required: boolean;
+  enclosure_note?: string | null;
+  action_needed?: string | null;
+}
+
+export interface ParchaaOffice {
+  office_name: string;
+  department: string;
+  address?: string | null;
+  district?: string | null;
+  state?: string | null;
+  contact_info?: string | null;
+  is_verified: boolean;
+  unverified_notice?: string | null;
+}
+
+export interface ParchaaTimeline {
+  expected_days?: number | null;
+  timeline_description: string;
+  is_verified: boolean;
+  unverified_notice?: string | null;
+}
+
+export interface ParchaaSchemeSummary {
+  scheme_id: string;
+  scheme_name: string;
+  category: string;
+  short_description: string;
+  detailed_description: string;
+  target_beneficiaries: string;
+  main_benefits: string[];
+  eligibility_summary: string[];
+  official_source_url: string;
+  application_url?: string | null;
+}
+
+export interface ParchaaApplicationInfo {
+  application_channel: string;
+  official_portal_url?: string | null;
+  physical_enclosures: string[];
+  process_steps: string[];
+  administrative_office: ParchaaOffice;
+  processing_timeline: ParchaaTimeline;
+  next_step_action: string;
+}
+
+export interface ParchaaRequest {
+  scheme_id: string;
+  citizen_profile?: ParchaaCitizenProfile | CitizenProfile | null;
+  application_context?: Record<string, any> | null;
+  document_readiness?: ParchaaDocumentItem[] | null;
+  kagazcheck_ready_count?: number | null;
+  kagazcheck_total_count?: number | null;
+  preferred_language?: string | null;
+}
+
+export interface ParchaaResponse {
+  parchaa_id: string;
+  reference_number: string;
+  generated_at: string;
+  scheme: ParchaaSchemeSummary;
+  citizen?: ParchaaCitizenProfile | null;
+  documents: ParchaaDocumentItem[];
+  application_info: ParchaaApplicationInfo;
+  pdf_base64?: string | null;
+  pdf_filename: string;
+  page_count: number;
+  language: string;
+}
+
+/**
+ * Parchaa Generator: Compile application dossier with single-page PDF
+ */
+export async function generateParchaa(
+  req: ParchaaRequest
+): Promise<ParchaaResponse> {
+  const response = await apiClient.post<ParchaaResponse>(
+    '/api/v1/parchaa/generate',
+    req
+  );
+  return response.data;
+}
+
+/**
+ * Parchaa Generator: Stream raw application dossier PDF for browser download
+ */
+export async function downloadParchaaPdf(
+  req: ParchaaRequest
+): Promise<Blob> {
+  const response = await apiClient.post(
+    '/api/v1/parchaa/download',
+    req,
+    {
+      responseType: 'blob',
+    }
+  );
+  return response.data;
+}
+
+/**
+ * Parchaa Generator: Fetch structured scheme preview before generation
+ */
+export async function fetchParchaaPreview(
+  schemeId: string,
+  language: string = 'en'
+): Promise<ParchaaResponse> {
+  const response = await apiClient.get<ParchaaResponse>(
+    `/api/v1/parchaa/preview/${schemeId}`,
+    {
+      params: { language },
+    }
+  );
+  return response.data;
+}
+
 export { API_BASE_URL };
+
 

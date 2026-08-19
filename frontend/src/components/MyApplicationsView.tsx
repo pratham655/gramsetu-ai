@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Sparkles,
   Info,
+  FileText,
 } from 'lucide-react';
 import { DocumentChecklist } from './DocumentChecklist';
 
@@ -26,13 +27,16 @@ interface MyApplicationsViewProps {
   applications: ApplicationRecord[];
   onExploreSchemes: () => void;
   onOpenKagazCheck?: (schemeId?: string) => void;
+  onGenerateParchaa?: (schemeId: string) => void;
 }
 
 export function MyApplicationsView({
   applications,
   onExploreSchemes,
   onOpenKagazCheck,
+  onGenerateParchaa,
 }: MyApplicationsViewProps) {
+
   const [selectedApp, setSelectedApp] = useState<ApplicationRecord | null>(
     applications[0] || null
   );
@@ -188,9 +192,22 @@ export function MyApplicationsView({
                     {selectedApp.nextAction}
                   </p>
                 </div>
+
+                {/* Parchaa Dossier Action Button */}
+                {onGenerateParchaa && (
+                  <button
+                    type="button"
+                    onClick={() => onGenerateParchaa(selectedApp.schemeId)}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <FileText className="h-4 w-4 text-emerald-400" />
+                    <span>Generate &amp; Download Printable Application Parchaa</span>
+                  </button>
+                )}
               </div>
 
               {/* Document Checklist for this application */}
+
               <DocumentChecklist
                 schemeName={selectedApp.schemeName}
                 documents={selectedApp.requiredDocuments}

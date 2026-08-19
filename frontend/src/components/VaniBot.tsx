@@ -17,7 +17,9 @@ import {
   Info,
   ArrowRight,
   Headphones,
+  FileText,
 } from 'lucide-react';
+
 import {
   transcribeAudio,
   respondVani,
@@ -37,7 +39,9 @@ export interface VaniBotProps {
   activeLanguage?: string;
   onOpenSchemeModal?: (scheme: SchemeData | SchemeMatchResult | { scheme_id: string; scheme_name: string }) => void;
   onOpenKagazCheck?: (schemeId?: string) => void;
+  onOpenParchaa?: (schemeId: string) => void;
 }
+
 
 interface ChatMessage {
   id: string;
@@ -58,7 +62,9 @@ export function VaniBot({
   activeLanguage = 'kn',
   onOpenSchemeModal,
   onOpenKagazCheck,
+  onOpenParchaa,
 }: VaniBotProps) {
+
   // Session & Language State
   const [sessionId] = useState<string>(() => `vani_session_${Date.now().toString(36)}`);
   const [language, setLanguage] = useState<string>(activeLanguage);
@@ -888,6 +894,16 @@ export function VaniBot({
                               </button>
                             )}
 
+                            {onOpenParchaa && (
+                              <button
+                                onClick={() => onOpenParchaa(sc.scheme_id)}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2.5 py-1 rounded-lg transition cursor-pointer"
+                              >
+                                <FileText className="h-3 w-3 text-emerald-700" />
+                                <span>Generate Parchaa</span>
+                              </button>
+                            )}
+
                             {onOpenSchemeModal && (
                               <button
                                 onClick={() => onOpenSchemeModal({
@@ -900,6 +916,7 @@ export function VaniBot({
                                 <ArrowRight className="h-3 w-3" />
                               </button>
                             )}
+
 
                             {sc.official_url && (
                               <a
