@@ -16,6 +16,9 @@ DOCUMENT_KEYWORD_MAP = [
     (r"land|ror|khasra|khatauni|ownership|homestead", "land_record", "Land Ownership Record (RoR / Khasra)"),
     (r"bank|passbook", "bank_passbook", "Bank Account Passbook"),
     (r"ration|bpl|secc", "ration_card", "Ration / BPL Card"),
+    (r"residence|electricity bill|house tax|water bill|address proof|domicile", "residence_proof", "Proof of Residence / Utility Bill"),
+    (r"photo|photograph", "photograph", "Passport-size Photograph"),
+    (r"declaration|self-declaration|affidavit", "self_declaration", "Self-Declaration / Affidavit"),
     (r"income|aamdani", "income_certificate", "Income Certificate"),
     (r"caste|community|category", "caste_certificate", "Caste / Category Certificate"),
     (r"mgnrega|job card", "mgnrega_card", "MGNREGA Job Card"),
@@ -26,6 +29,7 @@ DOCUMENT_KEYWORD_MAP = [
     (r"farmer identification|fid|kutumba", "fid_card", "Farmer ID / Kutumba ID"),
     (r"admission|fee receipt|student", "student_admission", "College Admission / Fee Receipt"),
 ]
+
 
 
 class SchemeAuditService:

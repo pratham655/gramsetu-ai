@@ -25,6 +25,8 @@ class VaniConversationService:
     def __init__(self):
         # In-memory multi-turn session cache
         self._session_history: Dict[str, List[Dict[str, Any]]] = {}
+        self._session_scheme_context: Dict[str, str] = {}
+        self._session_language_context: Dict[str, str] = {}
 
     def _get_scheme_by_id(self, scheme_id: str) -> Optional[Dict[str, Any]]:
         for s in VERIFIED_SCHEMES_SEED:
@@ -69,14 +71,93 @@ class VaniConversationService:
             )
         return cards
 
+    @classmethod
+    def _get_localized_scheme_name(cls, scheme: Dict[str, Any], lang: str) -> str:
+        default_name = scheme.get("name", "")
+        loc_names = scheme.get("localized_names", {})
+        if isinstance(loc_names, dict) and lang in loc_names:
+            return loc_names[lang]
+        return default_name
+
+    def _format_unverified_scheme_response(self, lang: str) -> str:
+        if lang == "kn":
+            return (
+                "ಗ್ರಾಮಸೇತು ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಪ್ರಸ್ತುತ ಆ ಯೋಜನೆಗೆ ಸಂಬಂಧಿಸಿದ ಪರಿಶೀಲಿತ ಶಾಸನಬದ್ಧ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ. "
+                "ದಯವಿಟ್ಟು ಅಧಿಕೃತ ಸರಕಾರಿ ಪೋರ್ಟಲ್ ಅಥವಾ ನಿಮ್ಮ ಸ್ಥಳೀಯ ಆಡಳಿತ ಕೇಂದ್ರವನ್ನು (ಗ್ರಾಮ ಪಂಚಾಯತಿ / ಗ್ರಾಮ ಒನ್) ಸಂಪರ್ಕಿಸಿ."
+            )
+        elif lang == "hi":
+            return (
+                "ग्रामसेतु डेटाबेस में वर्तमान में उस योजना से संबंधित सत्यापित वैधानिक जानकारी उपलब्ध नहीं है। "
+                "कृपया आधिकारिक सरकारी पोर्टल अथवा अपने स्थानीय प्रशासनिक केंद्र (ग्राम पंचायत / जन सेवा केंद्र) से संपर्क करें।"
+            )
+        else:
+            return (
+                "GramSetu currently does not have verified statutory information for that scheme in its database. "
+                "Please consult official government portals or your local administrative centre (Gram Panchayat / CSC Kendra) for verified details."
+            )
+
+    def _format_scheme_overview(self, scheme: Dict[str, Any], lang: str) -> str:
+        s_name = self._get_localized_scheme_name(scheme, lang)
+        docs = scheme.get("required_documents", [])
+        rules = scheme.get("rules", [])
+        app_url = scheme.get("application_url") or scheme.get("official_source_url", "")
+
+        elig_lines = [r.get("description", "") for r in rules if r.get("description")]
+        if not elig_lines:
+            elig_lines = [scheme.get("short_description", "")]
+
+        if lang == "kn":
+            elig_txt = "\n".join([f"• {e}" for e in elig_lines])
+            docs_txt = "\n".join([f"• {d}" for d in docs])
+            return (
+                f"ಖಂಡಿತ, **{s_name}** ಕುರಿತ ಪರಿಶೀಲಿತ ಮಾಹಿತಿ ಇಲ್ಲಿದೆ:\n\n"
+                f"**ಅರ್ಹತಾ ಮಾನದಂಡಗಳು:**\n{elig_txt}\n\n"
+                f"**ಅಗತ್ಯವಿರುವ ಮುಖ್ಯ ದಾಖಲೆಗಳು:**\n{docs_txt}\n\n"
+                f"**ಅರ್ಜಿ ಸಲ್ಲಿಸುವ ವಿಧಾನ:**\n"
+                f"• ಆನ್‌ಲೈನ್ ಪೋರ್ಟಲ್: {app_url}\n"
+                f"• ಹತ್ತಿರದ ಗ್ರಾಮ ಒನ್ (Gram One) / ಸಿಎಸ್‌ಸಿ ಕೇಂದ್ರ ಅಥವಾ ಸಂಬಂಧಪಟ್ಟ ಸರಕಾರಿ ಕಚೇರಿಯಲ್ಲಿ ಅರ್ಜಿ ಸಲ್ಲಿಸಬಹುದು.\n\n"
+                f"ನಿಮ್ಮ ದಾಖಲೆಗಳನ್ನು ಕಾಗಜ್‌ಚೆಕ್ (KagazCheck) ಮೂಲಕ ಪರಿಶೀಲಿಸಲು ಕೆಳಗಿನ ಬಟನ್ ಬಳಸಿ."
+            )
+        elif lang == "hi":
+            elig_txt = "\n".join([f"• {e}" for e in elig_lines])
+            docs_txt = "\n".join([f"• {d}" for d in docs])
+            return (
+                f"अवश्य, **{s_name}** के लिए उपलब्ध सत्यापित विवरण निम्नलिखित हैं:\n\n"
+                f"**पात्रता मानदंड:**\n{elig_txt}\n\n"
+                f"**आवश्यक प्रमुख दस्तावेज:**\n{docs_txt}\n\n"
+                f"**आवेदन प्रक्रिया:**\n"
+                f"• आधिकारिक पोर्टल: {app_url}\n"
+                f"• नजदीकी जन सेवा केंद्र (CSC Kendra), ग्राम वन, या संबंधित सरकारी कार्यालय में आवेदन करें।\n\n"
+                f"आप अपने दस्तावेजों की शुद्धता कागज़चेक (KagazCheck) द्वारा सत्यापित कर सकते हैं।"
+            )
+        else:
+            elig_txt = "\n".join([f"• {e}" for e in elig_lines])
+            docs_txt = "\n".join([f"• {d}" for d in docs])
+            return (
+                f"Sure. I can help you with **{s_name}**.\n\n"
+                f"Here are the verified details currently available:\n\n"
+                f"**Eligibility:**\n{elig_txt}\n\n"
+                f"**Required Documents:**\n{docs_txt}\n\n"
+                f"**Application Process:**\n"
+                f"• Online Portal: {app_url}\n"
+                f"• Offline: Visit your nearest Gram One centre, Common Service Centre (CSC), or designated government office.\n\n"
+                f"You can verify your statutory documents using KagazCheck before applying."
+            )
+
     def converse(self, req: VaniConverseRequest) -> VaniConverseResponse:
         """
         Processes a voice/text turn, performs grounded scheme reasoning, and returns response in requested language.
         """
         session_id = req.session_id or f"vani_sess_{uuid.uuid4().hex[:10]}"
-        lang = language_service.normalize_language_code(req.language)
-        query = req.user_query.strip()
+        query = req.user_query.strip() if req.user_query else ""
         
+        detected_script_lang = language_service.detect_language_from_text(query, default_lang=req.language or "en")
+        if session_id in self._session_language_context and detected_script_lang == "en" and req.language == "kn":
+            lang = self._session_language_context[session_id]
+        else:
+            lang = detected_script_lang
+        self._session_language_context[session_id] = lang
+
         # Build CitizenProfile object if profile dict passed
         profile_obj: Optional[CitizenProfile] = None
         if req.citizen_profile:
@@ -85,10 +166,20 @@ class VaniConversationService:
             except Exception as e:
                 logger.warning(f"Could not parse citizen profile in Vani-Bot: {e}")
 
+        valid_scheme_ids = [s["id"] for s in VERIFIED_SCHEMES_SEED]
+
         # Detect intent and scheme association
         matched_scheme_id, confidence = language_service.detect_scheme_intent(query)
-        if req.context_scheme_id and not matched_scheme_id:
-            matched_scheme_id = req.context_scheme_id
+        if not matched_scheme_id:
+            if req.context_scheme_id and req.context_scheme_id in valid_scheme_ids:
+                matched_scheme_id = req.context_scheme_id
+            elif session_id in self._session_scheme_context:
+                matched_scheme_id = self._session_scheme_context[session_id]
+
+        sub_intent = language_service.classify_sub_intent(query)
+
+        if matched_scheme_id and matched_scheme_id in valid_scheme_ids:
+            self._session_scheme_context[session_id] = matched_scheme_id
 
         # Response construction components
         reply_text = ""
@@ -98,138 +189,65 @@ class VaniConversationService:
         suggested_followups: List[str] = []
 
         # -------------------------------------------------------------
-        # SCENARIO 1: Specific Scheme Query (e.g. PM-KISAN, PMAY-G, etc.)
+        # SCENARIO 0: Unverified Scheme Query
         # -------------------------------------------------------------
-        if matched_scheme_id and matched_scheme_id in [s["id"] for s in VERIFIED_SCHEMES_SEED]:
+        if matched_scheme_id == "unverified_scheme":
+            reply_text = self._format_unverified_scheme_response(lang)
+            sources = ["GramSetu Verification Engine"]
+            suggested_followups = [
+                "Which schemes am I eligible for?",
+                "What documents do I need for PM-KISAN?",
+                "How to apply for Ration Card?",
+            ]
+
+        # -------------------------------------------------------------
+        # SCENARIO 1: Specific Scheme Query
+        # -------------------------------------------------------------
+        elif matched_scheme_id and matched_scheme_id in valid_scheme_ids:
             target_scheme = self._get_scheme_by_id(matched_scheme_id)
             if target_scheme:
                 scheme_cards = self._build_scheme_cards([target_scheme], profile_obj)
                 sources = [target_scheme.get("official_source_url", "Official Gazette")]
+                s_name = self._get_localized_scheme_name(target_scheme, lang)
 
-                s_name = target_scheme.get("name", "")
-                benefits_str = ", ".join(target_scheme.get("benefits", [])[:2])
-                docs_list = target_scheme.get("required_documents", [])
-                docs_str = ", ".join(docs_list[:3])
-
-                # Check eligibility if profile available
-                elig_note_kn = ""
-                elig_note_hi = ""
-                elig_note_en = ""
-                if profile_obj:
-                    eval_res = yojanamatch_service.evaluate_scheme(target_scheme, profile_obj)
-                    if eval_res.eligible_status:
-                        elig_note_kn = "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲಿಸಲಾಗಿದ್ದು, ನೀವು ಈ ಯೋಜನೆಗೆ 100% ಅರ್ಹರಾಗಿದ್ದೀರಿ."
-                        elig_note_hi = "आपकी प्रोफाइल के आधार पर आप इस योजना के लिए 100% पात्र हैं।"
-                        elig_note_en = "Based on your profile, you are 100% eligible for this scheme."
+                if sub_intent == "documents":
+                    docs = target_scheme.get("required_documents", [])
+                    docs_txt = "\n".join([f"• {d}" for d in docs])
+                    if lang == "kn":
+                        reply_text = f"**{s_name}** ಗೆ ಅಗತ್ಯವಿರುವ ದಾಖಲೆಗಳು:\n\n{docs_txt}"
+                    elif lang == "hi":
+                        reply_text = f"**{s_name}** के आवश्यक दस्तावेज:\n\n{docs_txt}"
                     else:
-                        failed_reasons = [r.description for r in eval_res.failed_rules if r.description]
-                        reason = failed_reasons[0] if failed_reasons else "ಮಾನದಂಡಗಳು ಹೊಂದುತ್ತಿಲ್ಲ"
-                        elig_note_kn = f"ಗಮನಿಸಿ: ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಪ್ರಕಾರ ({reason})."
-                        elig_note_hi = f"ध्यान दें: आपकी प्रोफाइल के अनुसार ({reason})।"
-                        elig_note_en = f"Note: Rule criteria not fully met ({reason})."
-
-                # Localized Grounded Explanations
-                if lang == "kn":
-                    if matched_scheme_id == "pm-kisan-001":
-                        reply_text = (
-                            f"**ಪಿಎಂ ಕಿಸಾನ್ (PM-KISAN)** ಯೋಜನೆಯಡಿ ಜಮೀನು ಹೊಂದಿರುವ ರೈತ ಕುಟುಂಬಗಳಿಗೆ ವರ್ಷಕ್ಕೆ ₹6,000 "
-                            f"(ಪ್ರತಿ 4 ತಿಂಗಳಿಗೊಮ್ಮೆ ₹2,000) ನೇರವಾಗಿ ಬ್ಯಾಂಕ್ ಖಾತೆಗೆ ಜಮೆಯಾಗುತ್ತದೆ. "
-                            f"{elig_note_kn}\n\n"
-                            f"**ಅಗತ್ಯ ದಾಖಲೆಗಳು:** {docs_str}.\n"
-                            f"ದಾಖಲೆಗಳನ್ನು ಕಾಗಜ್‌ಚೆಕ್ (KagazCheck) ಕ್ಯಾಮೆರಾ ಮೂಲಕ ಪರಿಶೀಲಿಸಲು ಕೆಳಗಿನ ಬಟನ್ ಒತ್ತಿರಿ."
-                        )
-                    elif matched_scheme_id == "pmay-g-002":
-                        reply_text = (
-                            f"**ಪ್ರಧಾನ ಮಂತ್ರಿ ಆವಾಸ್ ಯೋಜನೆ - ಗ್ರಾಮೀಣ (PMAY-G)** ಅಡಿಯಲ್ಲಿ ಪಕ್ಕಾ ಮನೆ ನಿರ್ಮಿಸಲು "
-                            f"₹1,20,000 ಆರ್ಥಿಕ ಅನುದಾನ ಹಾಗೂ ನರೇಗಾ (MGNREGA) ಅಡಿಯಲ್ಲಿ ಕೂಲಿ ಹಣ ಸಿಗುತ್ತದೆ. "
-                            f"{elig_note_kn}\n\n"
-                            f"**ಅಗತ್ಯ ದಾಖಲೆಗಳು:** {docs_str}."
-                        )
-                    elif matched_scheme_id == "raitha-vidya-005":
-                        reply_text = (
-                            f"**ಕರ್ನಾಟಕ ರೈತ ವಿದ್ಯಾನಿಧಿ** ಯೋಜನೆಯು ರೈತರ ಮಕ್ಕಳಿಗೆ ಪಿಯುಸಿ, ಐಟಿಐ, ಡಿಗ್ರಿ ಮತ್ತು ಸ್ನಾತಕೋತ್ತರ "
-                            f"ಶಿಕ್ಷಣಕ್ಕಾಗಿ ₹2,000 ರಿಂದ ₹11,000 ವರೆಗೆ ವಾರ್ಷಿಕ ವಿದ್ಯಾರ್ಥಿವೇತನ ನೀಡುತ್ತದೆ. "
-                            f"{elig_note_kn}\n\n"
-                            f"**ಅಗತ್ಯ ದಾಖಲೆಗಳು:** {docs_str}."
-                        )
-                    elif matched_scheme_id == "pm-jay-004":
-                        reply_text = (
-                            f"**ಆಯುಷ್ಮಾನ್ ಭಾರತ್ (PM-JAY)** ಅಡಿಯಲ್ಲಿ ಅರ್ಹ ಬಡ ಕುಟುಂಬಗಳಿಗೆ ಪ್ರತಿ ವರ್ಷ ₹5,00,000 ವರೆಗೆ "
-                            f"ಉಚಿತ ನಗದುರಹಿತ ಆಸ್ಪತ್ರೆ ಚಿಕಿತ್ಸೆ ಸೌಲಭ್ಯ ದೊರೆಯುತ್ತದೆ. {elig_note_kn}"
-                        )
+                        reply_text = f"Required documents for **{s_name}**:\n\n{docs_txt}"
+                elif sub_intent == "application":
+                    app_url = target_scheme.get("application_url") or target_scheme.get("official_source_url", "")
+                    if lang == "kn":
+                        reply_text = f"**{s_name}** ಗೆ ಅರ್ಜಿ ಸಲ್ಲಿಸುವ ಅಧಿಕೃತ ಪೋರ್ಟಲ್: {app_url} ಅಥವಾ ಹತ್ತಿರದ ಗ್ರಾಮ ಒನ್ / ಸಿಎಸ್‌ಸಿ ಕೇಂದ್ರ."
+                    elif lang == "hi":
+                        reply_text = f"**{s_name}** के लिए आधिकारिक पोर्टल: {app_url} या नजदीकी जन सेवा केंद्र पर आवेदन करें।"
                     else:
-                        reply_text = (
-                            f"**{s_name}** ಕುರಿತು ವಿವರ: {target_scheme.get('short_description', '')}. "
-                            f"ಪ್ರಯೋಜನಗಳು: {benefits_str}. {elig_note_kn}\n"
-                            f"ಅಗತ್ಯ ದಾಖಲೆಗಳು: {docs_str}."
-                        )
+                        reply_text = f"Apply for **{s_name}** online at {app_url} or offline at your nearest CSC / Gram One centre."
+                else:
+                    reply_text = self._format_scheme_overview(target_scheme, lang)
 
-                    suggested_followups = [
-                        f"{s_name} ಗೆ ದಾಖಲೆ ಪರಿಶೀಲಿಸಿ",
-                        "ನನ್ನ ಅರ್ಹತೆ ಇನ್ನೊಮ್ಮೆ ನೋಡಿ",
-                        "ಇತರ ಯೋಜನೆಗಳನ್ನು ತಿಳಿಸಿ",
-                    ]
-
-                elif lang == "hi":
-                    if matched_scheme_id == "pm-kisan-001":
-                        reply_text = (
-                            f"**पीएम किसान सम्मान निधि** योजना के तहत पात्र किसान परिवारों को प्रति वर्ष ₹6,000 "
-                            f"(₹2,000 की 3 किस्तों में) सीधे आधार-सीडेड बैंक खाते में दिए जाते हैं। "
-                            f"{elig_note_hi}\n\n"
-                            f"**आवश्यक दस्तावेज:** {docs_str}।\n"
-                            f"दस्तावेजों को कागज़चेक (KagazCheck) कैमरे से जांचने के लिए नीचे दिए गए बटन पर क्लिक करें।"
-                        )
-                    elif matched_scheme_id == "pmay-g-002":
-                        reply_text = (
-                            f"**प्रधानमंत्री आवास योजना - ग्रामीण (PMAY-G)** के तहत बेघर और कच्चे मकान वाले परिवारों को "
-                            f"पक्का मकान बनाने के लिए ₹1,20,000 की वित्तीय सहायता दी जाती है। "
-                            f"{elig_note_hi}\n\n"
-                            f"**आवश्यक दस्तावेज:** {docs_str}।"
-                        )
-                    elif matched_scheme_id == "pm-jay-004":
-                        reply_text = (
-                            f"**आयुष्मान भारत (PM-JAY)** योजना के तहत पात्र परिवारों को प्रति वर्ष ₹5,00,000 तक का "
-                            f"निःशुल्क कैशलेस स्वास्थ्य बीमा कवर मिलता है। {elig_note_hi}"
-                        )
-                    else:
-                        reply_text = (
-                            f"**{s_name}** का विवरण: {target_scheme.get('short_description', '')}। "
-                            f"लाभ: {benefits_str}। {elig_note_hi}\n"
-                            f"आवश्यक दस्तावेज: {docs_str}।"
-                        )
-
-                    suggested_followups = [
-                        f"{s_name} के दस्तावेज जांचें",
-                        "मेरी पात्रता चेक करें",
-                        "अन्य सरकारी योजनाएं बताएं",
-                    ]
-
-                else:  # English
-                    reply_text = (
-                        f"Under **{s_name}**, eligible citizens receive key statutory entitlements: {benefits_str}. "
-                        f"{elig_note_en}\n\n"
-                        f"**Required Documents:** {docs_str}.\n"
-                        f"You can verify your documents using KagazCheck camera auditor below."
-                    )
-                    suggested_followups = [
-                        f"Audit documents for {s_name}",
-                        "Check my full eligibility",
-                        "Show all agricultural schemes",
-                    ]
-
-                # Add Action Links
+                suggested_followups = [
+                    f"What documents do I need for {s_name.split('(')[0].strip()}?",
+                    f"Where do I apply?",
+                    f"Am I eligible for {s_name.split('(')[0].strip()}?",
+                ]
                 action_links.append(
                     VaniActionLink(
-                        label="Audit Documents on KagazCheck" if lang == "en" else ("ಕಾಗಜ್‌ಚೆಕ್‌ನಲ್ಲಿ ದಾಖಲೆ ಪರಿಶೀಲಿಸಿ" if lang == "kn" else "कागज़चेक में दस्तावेज जांचें"),
+                        label="Audit Documents on KagazCheck" if lang == "en" else ("ಕಾಗಜ್‌ಚೆಕ್‌ನಲ್ಲಿ ಪರಿಶೀಲಿಸಿ" if lang == "kn" else "कागज़चेक में जांचें"),
                         action_type="open_kagazcheck",
                         payload={"scheme_id": matched_scheme_id},
                     )
                 )
 
+
         # -------------------------------------------------------------
-        # SCENARIO 2: General Eligibility Query (e.g. "What schemes for me?")
+        # SCENARIO 2: General Eligibility Query
         # -------------------------------------------------------------
-        elif matched_scheme_id == "general_eligibility" or any(w in query.lower() for w in ["which", "eligible", "qualify", "ಯಾವ", "ಸಿಗುತ್ತದೆ", "पात्र"]):
+        elif sub_intent == "eligibility" or any(w in query.lower() for w in ["which", "eligible", "qualify", "ಯಾವ", "ಸಿಗುತ್ತದೆ", "पात्र"]):
             if profile_obj:
                 match_resp = yojanamatch_service.match_citizen(profile_obj)
                 eligible_schemes = [self._get_scheme_by_id(r.scheme_id) for r in match_resp.results if r.eligible_status and self._get_scheme_by_id(r.scheme_id)]
@@ -244,48 +262,41 @@ class VaniConversationService:
 
                 if lang == "kn":
                     reply_text = (
-                        f"ನಮಸ್ಕಾರ! ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ({profile_obj.occupation or 'ರೈತ'}, {profile_obj.state or 'ಕರ್ನಾಟಕ'}, "
-                        f"{profile_obj.landholding or 2.5} ಎಕರೆ ಜಮೀನು) ಪರಿಶೀಲಿಸಲಾಗಿದ್ದು, ನೀವು **{len(eligible_schemes)} ಯೋಜನೆಗಳಿಗೆ** ಅರ್ಹರಾಗಿದ್ದೀರಿ:\n\n"
+                        f"ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲಿಸಲಾಗಿದ್ದು, ನೀವು **{len(eligible_schemes)} ಪರಿಶೀಲಿತ ಯೋಜನೆಗಳಿಗೆ** ಅರ್ಹರಾಗಿದ್ದೀರಿ:\n\n"
                         f"• {s_names_kn}.\n\n"
                         f"ಯೋಜನೆಯ ವಿವರ ಹಾಗೂ ಕಾಗಜ್‌ಚೆಕ್ ಮೂಲಕ ದಾಖಲೆ ಪರಿಶೀಲನೆ ಮಾಡಲು ಕೆಳಗಿನ ಕಾರ್ಡ್‌ಗಳನ್ನು ನೋಡಿ."
                     )
-                    suggested_followups = ["ಪಿಎಂ ಕಿಸಾನ್ ಬಗ್ಗೆ ತಿಳಿಸಿ", "ದಾಖಲೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ", "ವಿದ್ಯಾನಿಧಿ ಅರ್ಜಿ ಹೇಗೆ?"]
+                    suggested_followups = ["ರೇಷನ್ ಕಾರ್ಡ್ ಮಾಹಿತಿ", "ಪಿಎಂ ಕಿಸಾನ್ ಬಗ್ಗೆ ತಿಳಿಸಿ", "ದಾಖಲೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ"]
                 elif lang == "hi":
                     reply_text = (
-                        f"नमस्ते! आपकी प्रोफाइल ({profile_obj.occupation or 'किसान'}, {profile_obj.state or 'कर्नाटक'}, "
-                        f"{profile_obj.landholding or 2.5} एकड़ जमीन) के आधार पर आप **{len(eligible_schemes)} योजनाओं** के लिए पात्र हैं:\n\n"
+                        f"आपकी प्रोफाइल के आधार पर आप **{len(eligible_schemes)} सत्यापित योजनाओं** के लिए पात्र हैं:\n\n"
                         f"• {s_names_hi}।\n\n"
                         f"विस्तृत जानकारी और कागज़ात जांच के लिए नीचे दिए गए कार्ड्स देखें।"
                     )
-                    suggested_followups = ["पीएम किसान की जानकारी", "कागजात की जांच करें", "आवास योजना के नियम"]
+                    suggested_followups = ["राशन कार्ड की जानकारी", "पीएम किसान की जानकारी", "कागजात की जांच करें"]
                 else:
                     reply_text = (
-                        f"Based on your profile ({profile_obj.occupation or 'Farmer'}, {profile_obj.state or 'Karnataka'}, "
-                        f"{profile_obj.landholding or 2.5} acres land), you qualify for **{len(eligible_schemes)} verified schemes**:\n\n"
+                        f"Based on your profile, you qualify for **{len(eligible_schemes)} verified schemes**:\n\n"
                         f"• {s_names_en}.\n\n"
                         f"Check the cards below for benefits, eligibility rules, and document verification."
                     )
-                    suggested_followups = ["Explain PM-KISAN rules", "Audit my documents", "How to apply?"]
+                    suggested_followups = ["Explain Ration Card rules", "Explain PM-KISAN rules", "Audit my documents"]
             else:
-                # Default popular schemes
                 top_schemes = VERIFIED_SCHEMES_SEED[:3]
                 scheme_cards = self._build_scheme_cards(top_schemes)
                 sources = ["GramSetu Schemes Repository"]
 
                 if lang == "kn":
                     reply_text = (
-                        "ಗ್ರಾಮಸೇತು ಎಐ ಪೋರ್ಟಲ್‌ನಲ್ಲಿ ಪ್ರಮುಖವಾಗಿ ಪಿಎಂ ಕಿಸಾನ್, ಪಿಎಂ ಆವಾಸ್ ಗ್ರಾಮೀಣ, ಆಯುಷ್ಮಾನ್ ಭಾರತ್ ಮತ್ತು ರೈತ ವಿದ್ಯಾನಿಧಿ "
-                        "ಯೋಜನೆಗಳು ಲಭ್ಯವಿವೆ. ನಿಮ್ಮ ನಿರ್ದಿಷ್ಟ ಅರ್ಹತೆ ತಿಳಿಯಲು ಪ್ರೊಫೈಲ್ ವಿವರ ನಮೂದಿಸಿ."
+                        "ಗ್ರಾಮಸೇತು ಎಐ ಪೋರ್ಟಲ್‌ನಲ್ಲಿ ಪ್ರಮುಖವಾಗಿ ರೇಷನ್ ಕಾರ್ಡ್, ಪಿಎಂ ಕಿಸಾನ್, ಪಿಎಂ ಆವಾಸ್ ಗ್ರಾಮೀಣ, ಮತ್ತು ಆಯುಷ್ಮಾನ್ ಭಾರತ್ ಯೋಜನೆಗಳು ಲಭ್ಯವಿವೆ."
                     )
                 elif lang == "hi":
                     reply_text = (
-                        "ग्रामसेतु एआई पर प्रमुख योजनाएं जैसे पीएम किसान, पीएम आवास ग्रामीण, आयुष्मान भारत और मातृ वंदना उपलब्ध हैं। "
-                        "अपनी पात्रता जांचने के लिए प्रोफाइल विवरण दर्ज करें।"
+                        "ग्रामसेतु एआई पर प्रमुख योजनाएं जैसे राशन कार्ड, पीएम किसान, पीएम आवास ग्रामीण और आयुष्मान भारत उपलब्ध हैं।"
                     )
                 else:
                     reply_text = (
-                        "GramSetu AI features verified statutory welfare schemes including PM-KISAN, PMAY-G, PM-JAY, and Raitha Vidya Nidhi. "
-                        "Fill in your profile parameters to evaluate deterministic eligibility."
+                        "GramSetu AI features verified statutory welfare schemes including Ration Card, PM-KISAN, PMAY-G, and PM-JAY."
                     )
 
             action_links.append(
@@ -297,39 +308,24 @@ class VaniConversationService:
             )
 
         # -------------------------------------------------------------
-        # SCENARIO 3: Document Inquiry (e.g. "What documents needed?")
+        # SCENARIO 3: Document Inquiry
         # -------------------------------------------------------------
-        elif matched_scheme_id == "document_inquiry" or any(w in query.lower() for w in ["document", "kagaz", "ದಾಖಲೆ", "दस्तावेज", "aadhaar", "ಆಧಾರ್"]):
+        elif sub_intent == "documents":
             all_docs_schemes = VERIFIED_SCHEMES_SEED[:2]
             scheme_cards = self._build_scheme_cards(all_docs_schemes, profile_obj)
             sources = ["KagazCheck Statutory Document Standards"]
 
             if lang == "kn":
                 reply_text = (
-                    "ಸರ್ಕಾರಿ ಯೋಜನೆಗಳಿಗೆ ಮುಖ್ಯವಾಗಿ ಈ ಕೆಳಗಿನ ದಾಖಲೆಗಳು ಅಗತ್ಯವಿರುತ್ತವೆ:\n\n"
-                    "1. **ಆಧಾರ್ ಕಾರ್ಡ್** (12 ಅಂಕೆಗಳು, ಹೆಸರು ಸ್ಪಷ್ಟವಿರಬೇಕು)\n"
-                    "2. **ಜಮೀನಿನ ಪಹಣಿ / ಆರ್‌ಒಆರ್ (ROR)** (ಕೃಷಿ ಯೋಜನೆಗಳಿಗೆ)\n"
-                    "3. **ಆಧಾರ್ ಲಿಂಕ್ ಆದ ಬ್ಯಾಂಕ್ ಪಾಸ್‌ಬುಕ್** (ಡಿಬಿಟಿ ಜಮೆಗಾಗಿ)\n"
-                    "4. **ರೇಷನ್ ಕಾರ್ಡ್ / ಬಿಪಿಎಲ್ ಕಾರ್ಡ್**\n\n"
-                    "ನಿಮ್ಮಲ್ಲಿರುವ ದಾಖಲೆಗಳನ್ನು ಕಾಗಜ್‌ಚೆಕ್ (KagazCheck) ಕ್ಯಾಮೆರಾ ಮೂಲಕ ಫೋಟೋ ತೆಗೆದು ತಕ್ಷಣ ಪರಿಶೀಲಿಸಬಹುದು."
+                    "ಸರ್ಕಾರಿ ಯೋಜನೆಗಳಿಗೆ ಮುಖ್ಯವಾಗಿ ಆಧಾರ್ ಕಾರ್ಡ್, ರೇಷನ್ ಕಾರ್ಡ್, ಜಮೀನಿನ ಪಹಣಿ (ROR), ಮತ್ತು ಬ್ಯಾಂಕ್ ಪಾಸ್‌ಬುಕ್ ಅಗತ್ಯವಿರುತ್ತದೆ."
                 )
             elif lang == "hi":
                 reply_text = (
-                    "सरकारी योजनाओं के आवेदन के लिए मुख्य रूप से ये दस्तावेज आवश्यक हैं:\n\n"
-                    "1. **आधार कार्ड** (12 अंकों का वैध आधार)\n"
-                    "2. **जमीन का खसरा / खतौनी / ROR** (कृषि योजनाओं के लिए)\n"
-                    "3. **आधार-सीडेड बैंक पासबुक** (डीबीटी राशि प्राप्त करने हेतु)\n"
-                    "4. **राशन कार्ड / बीपीएल कार्ड**\n\n"
-                    "आप अपने दस्तावेजों को कागज़चेक (KagazCheck) कैमरे से स्कैन करके जांच सकते हैं।"
+                    "सरकारी योजनाओं के आवेदन के लिए मुख्य रूप से आधार कार्ड, राशन कार्ड, जमीन का खसरा/खतौनी, और बैंक पासबुक आवश्यक हैं।"
                 )
             else:
                 reply_text = (
-                    "Standard government welfare schemes require the following key statutory certificates:\n\n"
-                    "1. **Aadhaar Card** (Valid 12-digit UIDAI identity)\n"
-                    "2. **Land Ownership RoR / Khasra** (For agricultural benefits)\n"
-                    "3. **Aadhaar-seeded Bank Account Passbook** (For direct DBT cash transfer)\n"
-                    "4. **Ration / BPL Card** (For rural welfare schemes)\n\n"
-                    "You can photograph your documents with KagazCheck camera auditor to verify statutory validity."
+                    "Standard government welfare schemes require Aadhaar Card, Ration/BPL Card, Land RoR, and Bank Passbook."
                 )
 
             action_links.append(
@@ -351,36 +347,21 @@ class VaniConversationService:
             if lang == "kn":
                 reply_text = (
                     "ನಮಸ್ಕಾರ! ನಾನು ನಿಮ್ಮ ಗ್ರಾಮಸೇತು ಧ್ವನಿ ಸಹಾಯಕ (Vani-Bot). "
-                    "ನಾನು ಸರಕಾರಿ ಯೋಜನೆಗಳು, ಅರ್ಹತಾ ನಿಯಮಗಳು, ಹಾಗೂ ಕಾಗಜ್‌ಚೆಕ್ ಮೂಲಕ ದಾಖಲೆ ಪರಿಶೀಲನೆಗೆ ಸಹಾಯ ಮಾಡುತ್ತೇನೆ. "
-                    "ನೀವು ಕಿಸಾನ್ ಯೋಜನೆ, ಆವಾಸ್ ಯೋಜನೆ, ಅಥವಾ ವಿದ್ಯಾನಿಧಿ ಕುರಿತು ಧ್ವನಿಯಲ್ಲೇ ಕೇಳಬಹುದು."
+                    "ನೀವು ರೇಷನ್ ಕಾರ್ಡ್, ಕಿಸಾನ್ ಯೋಜನೆ, ಆವಾಸ್ ಯೋಜನೆ ಕುರಿತು ಧ್ವನಿಯಲ್ಲೇ ಕೇಳಬಹುದು."
                 )
-                suggested_followups = [
-                    "ನನಗೆ ಯಾವ ಯೋಜನೆ ಸಿಗುತ್ತದೆ?",
-                    "ಪಿಎಂ ಕಿಸಾನ್ ದಾಖಲೆಗಳು ಯಾವುವು?",
-                    "ರೈತ ವಿದ್ಯಾನಿಧಿ ಮಾಹಿತಿ ತಿಳಿಸಿ",
-                ]
+                suggested_followups = ["ರೇಷನ್ ಕಾರ್ಡ್ ಅರ್ಜಿ ಹೇಗೆ?", "ಪಿಎಂ ಕಿಸಾನ್ ದಾಖಲೆಗಳು ಯಾವುವು?"]
             elif lang == "hi":
                 reply_text = (
                     "नमस्ते! मैं आपका ग्रामसेतु वाणी सहायक (Vani-Bot) हूँ। "
-                    "मैं सरकारी योजनाओं की पात्रता, आवश्यक दस्तावेजों और कागज़चेक सत्यापन में सहायता करता हूँ। "
-                    "आप किसान योजना, आवास योजना या आयुष्मान भारत के बारे में सीधे बोलकर पूछ सकते हैं।"
+                    "आप राशन कार्ड, किसान योजना, या आवास योजना के बारे में सीधे पूछ सकते हैं।"
                 )
-                suggested_followups = [
-                    "मेरी पात्र योजनाएं बताएं",
-                    "पीएम किसान के दस्तावेज",
-                    "आयुष्मान भारत के लाभ",
-                ]
+                suggested_followups = ["राशन कार्ड कैसे बनवाएं?", "पीएम किसान के दस्तावेज"]
             else:
                 reply_text = (
                     "Namaste! I am your GramSetu Vani Voice Assistant. "
-                    "I can help you discover statutory government schemes, verify eligibility criteria, and audit required documents with KagazCheck. "
-                    "You can ask about PM-KISAN, PMAY-G Housing, PM-JAY Health, or state scholarships."
+                    "You can ask about Ration Card, PM-KISAN, PMAY-G Housing, or PM-JAY Health."
                 )
-                suggested_followups = [
-                    "Which schemes am I eligible for?",
-                    "What documents are needed for PM-KISAN?",
-                    "Tell me about Raitha Vidya Nidhi",
-                ]
+                suggested_followups = ["I want to apply for ration card", "What documents are needed for PM-KISAN?"]
 
         # Record in session history
         turn_data = {
@@ -391,7 +372,6 @@ class VaniConversationService:
         if session_id not in self._session_history:
             self._session_history[session_id] = []
         self._session_history[session_id].append(turn_data)
-        # Keep last 10 turns
         if len(self._session_history[session_id]) > 10:
             self._session_history[session_id].pop(0)
 
@@ -410,6 +390,11 @@ class VaniConversationService:
     def clear_session(self, session_id: str):
         if session_id in self._session_history:
             del self._session_history[session_id]
+        if session_id in self._session_scheme_context:
+            del self._session_scheme_context[session_id]
+        if session_id in self._session_language_context:
+            del self._session_language_context[session_id]
 
 
 conversation_service = VaniConversationService()
+
