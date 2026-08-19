@@ -7,14 +7,16 @@ import {
   Cpu,
   Landmark,
   CheckCircle2,
+  Mic,
 } from 'lucide-react';
 
 interface HeroProps {
   onFindSchemes: () => void;
   onExploreSchemes: () => void;
+  onOpenVaniBot?: () => void;
 }
 
-export function Hero({ onFindSchemes, onExploreSchemes }: HeroProps) {
+export function Hero({ onFindSchemes, onExploreSchemes, onOpenVaniBot }: HeroProps) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/60 via-slate-50 to-slate-50 pt-10 pb-16 border-b border-slate-200/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,6 +49,16 @@ export function Hero({ onFindSchemes, onExploreSchemes }: HeroProps) {
                 <ArrowRight className="h-4 w-4" />
               </button>
 
+              {onOpenVaniBot && (
+                <button
+                  onClick={onOpenVaniBot}
+                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-semibold text-sm shadow-xs transition-colors cursor-pointer"
+                >
+                  <Mic className="h-4 w-4 text-emerald-600 animate-pulse" />
+                  <span>Speak with Vani-Bot</span>
+                </button>
+              )}
+
               <button
                 onClick={onExploreSchemes}
                 className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-semibold text-sm shadow-xs transition-colors cursor-pointer"
@@ -55,6 +67,7 @@ export function Hero({ onFindSchemes, onExploreSchemes }: HeroProps) {
                 <span>Explore Schemes</span>
               </button>
             </div>
+
 
             {/* Quick Civic Assurance Badges */}
             <div className="pt-6 border-t border-slate-200/80 grid grid-cols-3 gap-4 text-left">

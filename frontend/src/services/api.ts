@@ -267,4 +267,200 @@ export async function clearKagazCheckSession(): Promise<{ status: string; messag
   return response.data;
 }
 
+// -------------------------------------------------------------
+// VANI-BOT: MULTILINGUAL CONVERSATIONAL VOICE ENGINE INTERFACES
+// -------------------------------------------------------------
+
+export interface VaniSchemeCard {
+  scheme_id: string;
+  scheme_name: string;
+  category?: string | null;
+  state?: string | null;
+  short_summary: string;
+  eligible_status?: boolean | null;
+  match_score?: number | null;
+  key_benefits: string[];
+  required_documents: string[];
+  official_url: string;
+  kagazcheck_ready: boolean;
+}
+
+export interface VaniActionLink {
+  label: string;
+  action_type: 'open_kagazcheck' | 'view_scheme' | 'check_eligibility' | 'open_url' | string;
+  payload: Record<string, any>;
+}
+
+export interface VaniLanguageInfo {
+  code: string;
+  locale: string;
+  name: string;
+  native_name: string;
+  supported_for_stt: boolean;
+  supported_for_tts: boolean;
+  sample_queries: string[];
+}
+
+export interface VaniTranscribeResponse {
+  transcript: string;
+  detected_language: string;
+  confidence: number;
+  status: string;
+  duration_seconds?: number | null;
+  provider: string;
+  error_message?: string | null;
+}
+
+export interface VaniSpeakRequest {
+  text: string;
+  language?: string;
+  speed?: number;
+}
+
+export interface VaniSpeakResponse {
+  language: string;
+  audio_base64?: string | null;
+  mime_type: string;
+  status: string;
+  provider: string;
+  message: string;
+}
+
+export interface VaniRespondRequest {
+  query: string;
+  language?: string;
+  session_id?: string;
+  citizen_profile?: CitizenProfile;
+  context_scheme_id?: string;
+  include_audio?: boolean;
+}
+
+export interface VaniRespondResponse {
+  session_id: string;
+  query: string;
+  language: string;
+  intent: string;
+  reply_text: string;
+  reply_audio_base64?: string | null;
+  scheme_cards: VaniSchemeCard[];
+  action_links: VaniActionLink[];
+  sources: string[];
+  suggested_followups: string[];
+  context_scheme_id?: string | null;
+}
+
+export interface VaniConversationTurnRequest {
+  session_id?: string;
+  language: string;
+  text_query?: string;
+  audio_base64?: string;
+  citizen_profile?: CitizenProfile;
+  context_scheme_id?: string;
+}
+
+export interface VaniConversationTurnResponse {
+  session_id: string;
+  transcribed_query: string;
+  detected_language: string;
+  reply_text: string;
+  reply_audio_base64?: string | null;
+  scheme_cards: VaniSchemeCard[];
+  action_links: VaniActionLink[];
+  sources: string[];
+  suggested_followups: string[];
+}
+
+/**
+ * Vani-Bot: Transcribe recorded citizen audio clip to regional text
+ */
+export async function transcribeAudio(
+  file: File | Blob,
+  language: string = 'kn'
+): Promise<VaniTranscribeResponse> {
+  const formData = new FormData();
+  formData.append('file', file, 'voice_recording.webm');
+  formData.append('language', language);
+
+  const response = await apiClient.post<VaniTranscribeResponse>(
+    '/api/v1/vanibot/transcribe',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data;
+}
+
+/**
+ * Vani-Bot: Submit multilingual query and retrieve grounded civic answer with scheme cards
+ */
+export async function respondVani(
+  req: VaniRespondRequest
+): Promise<VaniRespondResponse> {
+  const response = await apiClient.post<VaniRespondResponse>(
+    '/api/v1/vanibot/respond',
+    req
+  );
+  return response.data;
+}
+
+/**
+ * Vani-Bot: Synthesize text into regional spoken audio
+ */
+export async function speakVaniText(
+  req: VaniSpeakRequest
+): Promise<VaniSpeakResponse> {
+  const response = await apiClient.post<VaniSpeakResponse>(
+    '/api/v1/vanibot/speak',
+    req
+  );
+  return response.data;
+}
+
+/**
+ * Vani-Bot: Execute unified conversation turn (audio/text -> audio/cards reply)
+ */
+export async function converseVani(
+  req: VaniConversationTurnRequest
+): Promise<VaniConversationTurnResponse> {
+  const response = await apiClient.post<VaniConversationTurnResponse>(
+    '/api/v1/vanibot/conversation',
+    req
+  );
+  return response.data;
+}
+
+/**
+ * Vani-Bot: Get supported Indian regional languages catalog
+ */
+export async function fetchVaniLanguages(): Promise<VaniLanguageInfo[]> {
+  const response = await apiClient.get<VaniLanguageInfo[]>(
+    '/api/v1/vanibot/languages'
+  );
+  return response.data;
+}
+
+/**
+ * Vani-Bot: Clear multi-turn conversation session memory
+ */
+export async function clearVaniSession(
+  sessionId: string
+): Promise<{ status: string; message: string }> {
+  const formData = new FormData();
+  formData.append('session_id', sessionId);
+  const response = await apiClient.post<{ status: string; message: string }>(
+    '/api/v1/vanibot/session/clear',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data;
+}
+
 export { API_BASE_URL };
+

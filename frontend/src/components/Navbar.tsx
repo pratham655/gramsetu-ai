@@ -11,9 +11,10 @@ import {
   ChevronDown,
   Sparkles,
   Camera,
+  Mic,
 } from 'lucide-react';
 
-export type TabType = 'home' | 'find' | 'explore' | 'kagazcheck' | 'applications' | 'profile' | 'help';
+export type TabType = 'home' | 'find' | 'explore' | 'vanibot' | 'kagazcheck' | 'applications' | 'profile' | 'help';
 export type LanguageType = 'en' | 'hi' | 'kn';
 
 interface NavbarProps {
@@ -78,7 +79,7 @@ export function Navbar({
           <nav className="hidden lg:flex items-center gap-1">
             <button
               onClick={() => handleNav('home')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                 currentTab === 'home'
                   ? 'bg-emerald-50 text-emerald-800'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -89,7 +90,7 @@ export function Navbar({
 
             <button
               onClick={() => handleNav('find')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
                 currentTab === 'find'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-emerald-700 hover:bg-emerald-50'
@@ -105,7 +106,7 @@ export function Navbar({
 
             <button
               onClick={() => handleNav('explore')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
                 currentTab === 'explore'
                   ? 'bg-emerald-50 text-emerald-800'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -116,8 +117,23 @@ export function Navbar({
             </button>
 
             <button
+              onClick={() => handleNav('vanibot')}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                currentTab === 'vanibot'
+                  ? 'bg-gradient-to-r from-emerald-700 to-teal-700 text-white shadow-xs'
+                  : 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100'
+              }`}
+            >
+              <Mic className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
+              <span>Vani-Bot</span>
+              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-emerald-200 text-emerald-900">
+                Voice AI
+              </span>
+            </button>
+
+            <button
               onClick={() => handleNav('kagazcheck')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
                 currentTab === 'kagazcheck'
                   ? 'bg-emerald-50 text-emerald-800'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -132,7 +148,7 @@ export function Navbar({
 
             <button
               onClick={() => handleNav('applications')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
                 currentTab === 'applications'
                   ? 'bg-emerald-50 text-emerald-800'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -146,6 +162,7 @@ export function Navbar({
                 </span>
               )}
             </button>
+
 
             <button
               onClick={() => handleNav('profile')}
@@ -273,6 +290,16 @@ export function Navbar({
             </button>
 
             <button
+              onClick={() => handleNav('vanibot')}
+              className={`p-3 rounded-xl text-xs font-bold text-left flex items-center gap-2 ${
+                currentTab === 'vanibot' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+              }`}
+            >
+              <Mic className="h-4 w-4 text-emerald-500 animate-pulse" />
+              <span>Vani-Bot (Voice AI)</span>
+            </button>
+
+            <button
               onClick={() => handleNav('kagazcheck')}
               className={`p-3 rounded-xl text-xs font-semibold text-left flex items-center gap-2 ${
                 currentTab === 'kagazcheck' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'bg-slate-50 text-slate-700'
@@ -281,6 +308,7 @@ export function Navbar({
               <Camera className="h-4 w-4 text-emerald-600" />
               <span>KagazCheck</span>
             </button>
+
 
             <button
               onClick={() => handleNav('applications')}

@@ -11,6 +11,7 @@ import { MyProfileView } from './components/MyProfileView';
 import { MyApplicationsView, type ApplicationRecord } from './components/MyApplicationsView';
 import { AssistantPanel } from './components/AssistantPanel';
 import { KagazCheckAuditor } from './components/KagazCheckAuditor';
+import { VaniBot } from './components/VaniBot';
 import {
   fetchActiveSchemes,
   matchEligibility,
@@ -20,6 +21,8 @@ import {
   type SchemeMatchResult,
 } from './services/api';
 import { Search, Sparkles, BookOpen, AlertCircle } from 'lucide-react';
+
+
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('home');
@@ -197,7 +200,9 @@ export default function App() {
                 if (!matchResponse) handleRunMatch(profile);
               }}
               onExploreSchemes={() => setCurrentTab('explore')}
+              onOpenVaniBot={() => setCurrentTab('vanibot')}
             />
+
 
             <HowItWorks />
 
@@ -308,9 +313,31 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 4: KAGAZCHECK MULTIMODAL VISION DOCUMENT AUDITOR */}
+        {/* VIEW 4: VANI-BOT MULTILINGUAL CONVERSATIONAL VOICE ENGINE */}
+        {currentTab === 'vanibot' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <VaniBot
+              citizenProfile={profile}
+              activeLanguage={language}
+              onOpenSchemeModal={(s) => {
+                if ('id' in s || 'scheme_id' in s) {
+                  const sId = 'id' in s ? (s as SchemeData).id : (s as any).scheme_id;
+                  const found = schemes.find((item) => item.id === sId);
+                  if (found) setSelectedScheme(found);
+                  else if ('scheme_name' in s) {
+                    setSelectedScheme(s as any);
+                  }
+                }
+              }}
+              onOpenKagazCheck={(sId) => handleOpenKagazCheck(sId)}
+            />
+          </div>
+        )}
+
+        {/* VIEW 5: KAGAZCHECK MULTIMODAL VISION DOCUMENT AUDITOR */}
         {currentTab === 'kagazcheck' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
             <KagazCheckAuditor
               initialScheme={targetKagazCheckScheme}
               citizenProfile={profile}
