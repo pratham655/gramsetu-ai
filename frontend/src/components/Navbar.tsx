@@ -10,9 +10,10 @@ import {
   X,
   ChevronDown,
   Sparkles,
+  Camera,
 } from 'lucide-react';
 
-export type TabType = 'home' | 'find' | 'explore' | 'profile' | 'applications' | 'help';
+export type TabType = 'home' | 'find' | 'explore' | 'kagazcheck' | 'applications' | 'profile' | 'help';
 export type LanguageType = 'en' | 'hi' | 'kn';
 
 interface NavbarProps {
@@ -112,6 +113,21 @@ export function Navbar({
             >
               <BookOpen className="h-3.5 w-3.5" />
               <span>Explore All</span>
+            </button>
+
+            <button
+              onClick={() => handleNav('kagazcheck')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                currentTab === 'kagazcheck'
+                  ? 'bg-emerald-50 text-emerald-800'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Camera className="h-3.5 w-3.5 text-emerald-600" />
+              <span>KagazCheck</span>
+              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-emerald-100 text-emerald-800">
+                Vision
+              </span>
             </button>
 
             <button
@@ -254,6 +270,16 @@ export function Navbar({
             >
               <BookOpen className="h-4 w-4 text-slate-600" />
               <span>Explore Schemes</span>
+            </button>
+
+            <button
+              onClick={() => handleNav('kagazcheck')}
+              className={`p-3 rounded-xl text-xs font-semibold text-left flex items-center gap-2 ${
+                currentTab === 'kagazcheck' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'bg-slate-50 text-slate-700'
+              }`}
+            >
+              <Camera className="h-4 w-4 text-emerald-600" />
+              <span>KagazCheck</span>
             </button>
 
             <button

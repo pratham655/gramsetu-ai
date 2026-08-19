@@ -25,11 +25,13 @@ export interface ApplicationRecord {
 interface MyApplicationsViewProps {
   applications: ApplicationRecord[];
   onExploreSchemes: () => void;
+  onOpenKagazCheck?: (schemeId?: string) => void;
 }
 
 export function MyApplicationsView({
   applications,
   onExploreSchemes,
+  onOpenKagazCheck,
 }: MyApplicationsViewProps) {
   const [selectedApp, setSelectedApp] = useState<ApplicationRecord | null>(
     applications[0] || null
@@ -192,6 +194,7 @@ export function MyApplicationsView({
               <DocumentChecklist
                 schemeName={selectedApp.schemeName}
                 documents={selectedApp.requiredDocuments}
+                onOpenKagazCheck={() => onOpenKagazCheck?.(selectedApp.schemeId)}
               />
             </div>
           ) : (

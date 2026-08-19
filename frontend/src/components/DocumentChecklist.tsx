@@ -16,11 +16,13 @@ interface DocumentItem {
 interface DocumentChecklistProps {
   schemeName?: string;
   documents?: string[];
+  onOpenKagazCheck?: () => void;
 }
 
 export function DocumentChecklist({
   schemeName = 'Application Documents',
   documents = ['Aadhaar Card', 'Land Records (Khata/ROR)', 'Bank Passbook', 'Ration Card'],
+  onOpenKagazCheck,
 }: DocumentChecklistProps) {
   const [docList, setDocList] = useState<DocumentItem[]>(() =>
     documents.map((doc, idx) => ({
@@ -141,11 +143,24 @@ export function DocumentChecklist({
         ))}
       </div>
 
-      <div className="p-3 rounded-xl bg-slate-50 text-[11px] text-slate-500 flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
-        <span>
-          Tip: Tap the circle to verify readiness or simulate document audit.
-        </span>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+        <div className="p-2.5 rounded-xl bg-slate-50 text-[11px] text-slate-500 flex items-center gap-2 flex-1">
+          <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span>
+            Statutory AI audit powered by KagazCheck deterministic vision engine.
+          </span>
+        </div>
+
+        {onOpenKagazCheck && (
+          <button
+            type="button"
+            onClick={onOpenKagazCheck}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <UploadCloud className="h-3.5 w-3.5" />
+            <span>Launch KagazCheck Camera</span>
+          </button>
+        )}
       </div>
     </div>
   );

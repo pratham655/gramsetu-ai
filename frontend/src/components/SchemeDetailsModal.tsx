@@ -15,12 +15,14 @@ interface SchemeDetailsModalProps {
   scheme: SchemeData | SchemeMatchResult | null;
   onClose: () => void;
   onStartApplication: (scheme: SchemeData | SchemeMatchResult) => void;
+  onAuditDocuments?: (scheme: SchemeData | SchemeMatchResult) => void;
 }
 
 export function SchemeDetailsModal({
   scheme,
   onClose,
   onStartApplication,
+  onAuditDocuments,
 }: SchemeDetailsModalProps) {
   if (!scheme) return null;
 
@@ -231,17 +233,32 @@ export function SchemeDetailsModal({
             Close Details
           </button>
 
-          <button
-            onClick={() => {
-              onStartApplication(scheme);
-              onClose();
-            }}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-200 flex items-center justify-center gap-2 transition cursor-pointer"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span>Prepare Application Dossier</span>
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+            {onAuditDocuments && (
+              <button
+                type="button"
+                onClick={() => {
+                  onAuditDocuments(scheme);
+                  onClose();
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-emerald-600 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 font-bold text-xs shadow-2xs transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Audit with KagazCheck</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                onStartApplication(scheme);
+                onClose();
+              }}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-200 flex items-center justify-center gap-2 transition cursor-pointer"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Prepare Application Dossier</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

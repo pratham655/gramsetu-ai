@@ -10,6 +10,7 @@ import { SchemeDetailsModal } from './components/SchemeDetailsModal';
 import { MyProfileView } from './components/MyProfileView';
 import { MyApplicationsView, type ApplicationRecord } from './components/MyApplicationsView';
 import { AssistantPanel } from './components/AssistantPanel';
+import { KagazCheckAuditor } from './components/KagazCheckAuditor';
 import {
   fetchActiveSchemes,
   matchEligibility,
@@ -48,6 +49,9 @@ export default function App() {
 
   // Scheme Details Modal State
   const [selectedScheme, setSelectedScheme] = useState<SchemeData | SchemeMatchResult | null>(null);
+
+  // KagazCheck Scoped Scheme State
+  const [targetKagazCheckScheme, setTargetKagazCheckScheme] = useState<SchemeData | SchemeMatchResult | null>(null);
 
   // Assistant Drawer State
   const [assistantOpen, setAssistantOpen] = useState<boolean>(false);
@@ -154,6 +158,20 @@ export default function App() {
       setApplications((prev) => [newApp, ...prev]);
     }
     setCurrentTab('applications');
+  };
+
+  // Handle Open KagazCheck Document Auditor
+  const handleOpenKagazCheck = (schemeOrId?: SchemeData | SchemeMatchResult | string) => {
+    if (schemeOrId) {
+      if (typeof schemeOrId === 'string') {
+        const found = schemes.find((s) => s.id === schemeOrId);
+        if (found) setTargetKagazCheckScheme(found);
+      } else {
+        setTargetKagazCheckScheme(schemeOrId);
+      }
+    }
+    setCurrentTab('kagazcheck');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -290,7 +308,23 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 4: MY PROFILE */}
+        {/* VIEW 4: KAGAZCHECK MULTIMODAL VISION DOCUMENT AUDITOR */}
+        {currentTab === 'kagazcheck' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <KagazCheckAuditor
+              initialScheme={targetKagazCheckScheme}
+              citizenProfile={profile}
+              availableSchemes={schemes}
+              onApplyForScheme={(sId) => {
+                const found = schemes.find((s) => s.id === sId);
+                if (found) handleStartApplication(found);
+                else setCurrentTab('applications');
+              }}
+            />
+          </div>
+        )}
+
+        {/* VIEW 5: MY PROFILE */}
         {currentTab === 'profile' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <MyProfileView
@@ -301,12 +335,13 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 5: MY APPLICATIONS */}
+        {/* VIEW 6: MY APPLICATIONS */}
         {currentTab === 'applications' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <MyApplicationsView
               applications={applications}
               onExploreSchemes={() => setCurrentTab('explore')}
+              onOpenKagazCheck={(sId) => handleOpenKagazCheck(sId)}
             />
           </div>
         )}
@@ -317,6 +352,7 @@ export default function App() {
         scheme={selectedScheme}
         onClose={() => setSelectedScheme(null)}
         onStartApplication={handleStartApplication}
+        onAuditDocuments={(s) => handleOpenKagazCheck(s)}
       />
 
       {/* Grounded AI Assistant Drawer */}
