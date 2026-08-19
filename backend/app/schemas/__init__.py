@@ -5,6 +5,19 @@ from app.schemas.eligibility import (
     EligibilityMatchResponse,
 )
 from app.schemas.scheme import SchemeBase, SchemeRead, EligibilityRuleBase, EligibilityRuleRead
+from app.schemas.vanibot import (
+    SupportedLanguageEnum,
+    VaniSchemeCard,
+    VaniActionLink,
+    VaniLanguageInfo,
+    VaniTranscribeResponse,
+    VaniSpeakRequest,
+    VaniSpeakResponse,
+    VaniRespondRequest,
+    VaniRespondResponse,
+    VaniConversationTurnRequest,
+    VaniConversationTurnResponse,
+)
 
 __all__ = [
     "CitizenProfile",
@@ -15,4 +28,16 @@ __all__ = [
     "SchemeRead",
     "EligibilityRuleBase",
     "EligibilityRuleRead",
+    "SupportedLanguageEnum",
+    "VaniSchemeCard",
+    "VaniActionLink",
+    "VaniLanguageInfo",
+    "VaniTranscribeResponse",
+    "VaniSpeakRequest",
+    "VaniSpeakResponse",
+    "VaniRespondRequest",
+    "VaniRespondResponse",
+    "VaniConversationTurnRequest",
+    "VaniConversationTurnResponse",
 ]
+
