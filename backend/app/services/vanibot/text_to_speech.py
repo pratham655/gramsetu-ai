@@ -1,3 +1,4 @@
+import asyncio
 import os
 import io
 import base64
@@ -9,6 +10,15 @@ from app.schemas.vanibot import VaniSpeakResponse
 from app.services.vanibot.language_service import language_service
 
 logger = logging.getLogger(__name__)
+
+
+def _generate_gtts_bytes(text: str, lang: str) -> bytes:
+    from gtts import gTTS
+    mp3_fp = io.BytesIO()
+    tts = gTTS(text=text, lang=lang, slow=False)
+    tts.write_to_fp(mp3_fp)
+    mp3_fp.seek(0)
+    return mp3_fp.read()
 
 
 class VaniTextToSpeechService:
@@ -41,13 +51,20 @@ class VaniTextToSpeechService:
             )
 
         clean_text = text.replace("*", "").replace("#", "").replace("`", "").strip()
-        # Truncate text to avoid excessively long audio buffers for voice UX
-        if len(clean_text) > 800:
-            clean_text = clean_text[:797] + "..."
+        # For voice conversational speech, synthesize the primary conversational statement (first 250 chars)
+        speech_chunk = clean_text
+        if len(clean_text) > 250:
+            # Cut at sentence boundary if possible
+            first_part = clean_text[:250]
+            if "." in first_part:
+                speech_chunk = first_part.rsplit(".", 1)[0] + "."
+            elif "\n" in first_part:
+                speech_chunk = first_part.rsplit("\n", 1)[0]
+            else:
+                speech_chunk = first_part
 
-        # Provider 1: gTTS (Google Text to Speech Python library)
+        # Provider 1: gTTS (Google Text to Speech Python library) with non-blocking async thread and timeout
         try:
-            from gtts import gTTS
             tts_lang_map = {
                 "kn": "kn",
                 "hi": "hi",
@@ -58,12 +75,12 @@ class VaniTextToSpeechService:
             }
             target_gtts_lang = tts_lang_map.get(lang_code, "kn")
             
-            mp3_fp = io.BytesIO()
-            tts = gTTS(text=clean_text, lang=target_gtts_lang, slow=False)
-            tts.write_to_fp(mp3_fp)
-            mp3_fp.seek(0)
+            raw_mp3_bytes = await asyncio.wait_for(
+                asyncio.to_thread(_generate_gtts_bytes, speech_chunk, target_gtts_lang),
+                timeout=4.0,
+            )
             
-            audio_b64 = base64.b64encode(mp3_fp.read()).decode("utf-8")
+            audio_b64 = base64.b64encode(raw_mp3_bytes).decode("utf-8")
             return VaniSpeakResponse(
                 language=lang_code,
                 audio_base64=audio_b64,
@@ -73,7 +90,7 @@ class VaniTextToSpeechService:
                 message="Synthesized via isolated gTTS regional engine.",
             )
         except Exception as e:
-            logger.warning(f"gTTS backend synthesis exception: {e}")
+            logger.warning(f"gTTS backend synthesis exception/timeout: {e}")
 
         # Provider 2: OpenAI TTS API
         openai_key = os.getenv("OPENAI_API_KEY")
@@ -86,12 +103,12 @@ class VaniTextToSpeechService:
                 }
                 payload = {
                     "model": "tts-1",
-                    "input": clean_text[:400],
+                    "input": speech_chunk[:400],
                     "voice": "nova" if lang_code == "hi" else "alloy",
                     "response_format": "mp3",
                     "speed": speed,
                 }
-                async with httpx.AsyncClient(timeout=10.0) as client:
+                async with httpx.AsyncClient(timeout=4.0) as client:
                     res = await client.post(url, headers=headers, json=payload)
                     if res.status_code == 200:
                         audio_b64 = base64.b64encode(res.content).decode("utf-8")
